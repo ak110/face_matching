@@ -15,14 +15,11 @@ TRAIN_PAIR_DIRS = [p for p in pathlib.Path('data/train').iterdir() if len(list(p
 
 
 def _main():
-    base_model = keras.applications.ResNet50(include_top=False)
+    base_model = keras.applications.Xception(include_top=False)
     for layer in base_model.layers:
-        if layer.name == 'res5a_branch2a':
+        if layer.name == 'block14_sepconv1':
             break
         layer.trainable = False
-    for layer in base_model.layers:
-        if isinstance(layer, keras.layers.BatchNormalization):
-            layer.trainable = False  # バッチサイズ小さいので壊さないようにBNは全部freeze
     x = base_model.outputs[0]
     x = keras.layers.GlobalAveragePooling2D()(x)
     x = keras.layers.Dense(128, activation='sigmoid')(x)
@@ -43,13 +40,13 @@ def _main():
 
     print('len(TRAIN_PAIR_DIRS) = ', len(TRAIN_PAIR_DIRS))
 
-    base_lr = 1e-2
+    base_lr = 1e-1
     main_epochs = 20
     lr_list = [base_lr] * main_epochs + [base_lr / 10] * (main_epochs // 2) + [base_lr / 100] * (main_epochs // 2)
 
     callbacks = []
     callbacks.append(keras.callbacks.LearningRateScheduler(lambda ep: lr_list[ep]))
-    callbacks.append(keras.callbacks.CSVLogger('history.tsv', separator='\t'))
+    callbacks.append(keras.callbacks.CSVLogger('siamese_history.tsv', separator='\t'))
     siamese.fit_generator(
         generator=_gen_samples(BATCH_SIZE, train=True),
         steps_per_epoch=512,
@@ -128,7 +125,7 @@ def load_image(path, train):
 
     x = keras.preprocessing.image.img_to_array(img)
     x = np.expand_dims(x, axis=0)
-    x = keras.applications.resnet50.preprocess_input(x)
+    x = keras.applications.xception.preprocess_input(x)
     x = np.squeeze(x, axis=0)
     return x
 

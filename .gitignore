@@ -1,3 +1,4 @@
 data/train
+data/train_only
 data/test
 *.h5
