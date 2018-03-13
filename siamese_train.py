@@ -6,7 +6,7 @@ import keras.backend as K
 import keras.preprocessing.image
 import numpy as np
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 
 TRAIN_DIRS = [p for p in pathlib.Path('data/train').iterdir()]
 TEST_DIRS = [p for p in pathlib.Path('data/test').iterdir()]
@@ -19,7 +19,8 @@ def _main():
     for layer in base_model.layers:
         if layer.name == 'block14_sepconv1':
             break
-        layer.trainable = False
+        elif not isinstance(layer, keras.layers.BatchNormalization):
+            layer.trainable = False
     x = base_model.outputs[0]
     x = keras.layers.GlobalAveragePooling2D()(x)
     x = keras.layers.Dense(128, activation='sigmoid')(x)

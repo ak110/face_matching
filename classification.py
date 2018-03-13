@@ -2,7 +2,7 @@
 import keras
 import keras.preprocessing.image
 
-BATCH_SIZE = 8
+BATCH_SIZE = 16
 
 
 def _main():
@@ -21,7 +21,8 @@ def _main():
     for layer in base_model.layers:
         if layer.name == 'block14_sepconv1':
             break
-        layer.trainable = False
+        elif not isinstance(layer, keras.layers.BatchNormalization):
+            layer.trainable = False
     x = base_model.outputs[0]
     x = keras.layers.GlobalAveragePooling2D()(x)
     x = keras.layers.Dense(num_classes, activation='softmax', kernel_initializer='zeros')(x)
