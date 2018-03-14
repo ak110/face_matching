@@ -51,10 +51,10 @@ def _main():
     callbacks.append(keras.callbacks.CSVLogger('siamese_history.tsv', separator='\t'))
     siamese.fit_generator(
         generator=_gen_samples(BATCH_SIZE, train=True),
-        steps_per_epoch=1024,
+        steps_per_epoch=512,
         validation_data=_gen_samples(BATCH_SIZE, train=False),
         validation_steps=32,
-        # class_weight=np.array([0.4, 1.6]),
+        class_weight=np.array([4.0, 0.5]),
         epochs=len(lr_list),
         callbacks=callbacks,
         workers=8)
@@ -87,7 +87,8 @@ def _distance_shape(input_shape):
 
 def _gen_samples(batch_size, train):
     while True:
-        match_size = batch_size // 4  # 一致：不一致
+        match_size = batch_size // 8  # 一致：不一致
+        assert match_size >= 1
         y = np.array([0] * match_size + [1] * (batch_size - match_size))
         X1 = np.empty((batch_size, 224, 224, 3))
         X2 = np.empty((batch_size, 224, 224, 3))
