@@ -1,15 +1,15 @@
-INFO:__main__:mean order:      407.9
-INFO:__main__:test accuracy:   0.0863
-INFO:__main__:top 5 accuracy:  0.2018
-INFO:__main__:top 10 accuracy: 0.2774
-INFO:__main__:top 15 accuracy: 0.3232
+INFO:__main__:mean order:      358.8
+INFO:__main__:test accuracy:   0.0821
+INFO:__main__:top 5 accuracy:  0.2137
+INFO:__main__:top 10 accuracy: 0.2798
+INFO:__main__:top 15 accuracy: 0.3274
 INFO:__main__:match:
-INFO:__main__:  min:    0.3201
-INFO:__main__:  max:    0.4417
-INFO:__main__:  mean:   0.3740
-INFO:__main__:  median: 0.3712
+INFO:__main__:  min:    0.3481
+INFO:__main__:  max:    0.4459
+INFO:__main__:  mean:   0.3897
+INFO:__main__:  median: 0.3865
 INFO:__main__:unmatch:
-INFO:__main__:  min:    0.0609
-INFO:__main__:  max:    0.9999
-INFO:__main__:  mean:   0.8917
-INFO:__main__:  median: 0.9637
+INFO:__main__:  min:    0.0652
+INFO:__main__:  max:    1.0000
+INFO:__main__:  mean:   0.9297
+INFO:__main__:  median: 0.9952

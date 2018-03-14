@@ -23,7 +23,7 @@ def _main():
             layer.trainable = False
     x = base_model.outputs[0]
     x = keras.layers.GlobalAveragePooling2D()(x)
-    x = keras.layers.Dense(128, activation='sigmoid')(x)
+    x = keras.layers.Dense(256, activation='sigmoid')(x)
     decoder = keras.models.Model(base_model.inputs, x)
     decoder.summary()
 
@@ -34,7 +34,8 @@ def _main():
     x = keras.layers.Lambda(_distance, _distance_shape)([d1, d2])
     siamese = keras.models.Model([inp1, inp2], x)
     siamese.compile(
-        loss=keras.losses.mean_squared_error,
+        loss=keras.losses.binary_crossentropy,
+        # loss=keras.losses.mean_squared_error,
         optimizer=keras.optimizers.SGD(momentum=0.9, nesterov=True),
         metrics=['acc'])
     siamese.summary()
@@ -50,10 +51,10 @@ def _main():
     callbacks.append(keras.callbacks.CSVLogger('siamese_history.tsv', separator='\t'))
     siamese.fit_generator(
         generator=_gen_samples(BATCH_SIZE, train=True),
-        steps_per_epoch=512,
+        steps_per_epoch=1024,
         validation_data=_gen_samples(BATCH_SIZE, train=False),
         validation_steps=32,
-        class_weight=np.array([0.4, 1.6]),
+        # class_weight=np.array([0.4, 1.6]),
         epochs=len(lr_list),
         callbacks=callbacks,
         workers=8)
