@@ -1,6 +1,6 @@
 """Siamese Networksのテスト。"""
-import pathlib
 import logging
+import pathlib
 
 import keras
 import keras.preprocessing.image
@@ -8,7 +8,7 @@ import numpy as np
 import sklearn.metrics
 from tqdm import tqdm
 
-from siamese_train import load_image
+from siamese_train import distance_np, load_image
 
 BATCH_SIZE = 32
 
@@ -64,10 +64,10 @@ def _main():
     order_list = []
     match_dist_info = []
     unmatch_dist_info = []
-    for x, y in tqdm(zip(X_test, y_test)):
+    for x, y in tqdm(list(zip(X_test, y_test))):
         img = load_image(x, train=False)
         feats = decoder.predict(np.expand_dims(img, axis=0))[0]
-        distances = _distance(feature_train, feats[np.newaxis, :])
+        distances = distance_np(feature_train, feats[np.newaxis, :])
         assert distances.shape == (len(y_train),)
         pred_test = y_train[distances.argmin(axis=0)]
         pred_list.append(pred_test)
@@ -102,19 +102,6 @@ def _main():
 
     _print_info('match', match_dist_info)
     _print_info('unmatch', unmatch_dist_info)
-
-
-def _distance(x0, x1):
-    # 非負値のコサイン類似度：似てたら1、似てなかったら0。距離(のようなもの)にするため1から引いた値にする。
-    x0 = _l2_normalize(x0, axis=-1)
-    x1 = _l2_normalize(x1, axis=-1)
-    d = 1 - np.sum(x0 * x1, axis=-1)
-    return d
-
-
-def _l2_normalize(x, axis):
-    norm = np.sqrt(np.sum(np.square(x), axis=axis))
-    return x / np.expand_dims(norm, axis=-1)
 
 
 if __name__ == '__main__':

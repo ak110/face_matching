@@ -23,7 +23,7 @@ def _main():
             layer.trainable = False
     x = base_model.outputs[0]
     x = keras.layers.GlobalAveragePooling2D()(x)
-    x = keras.layers.Dense(256, activation='sigmoid')(x)
+    x = keras.layers.Dense(128)(x)
     decoder = keras.models.Model(base_model.inputs, x)
     decoder.summary()
 
@@ -34,8 +34,8 @@ def _main():
     x = keras.layers.Lambda(_distance, _distance_shape)([d1, d2])
     siamese = keras.models.Model([inp1, inp2], x)
     siamese.compile(
-        loss=keras.losses.binary_crossentropy,
-        # loss=keras.losses.mean_squared_error,
+        # loss=keras.losses.binary_crossentropy,
+        loss=keras.losses.mean_squared_error,
         optimizer=keras.optimizers.SGD(momentum=0.9, nesterov=True),
         metrics=['acc'])
     siamese.summary()
@@ -54,7 +54,7 @@ def _main():
         steps_per_epoch=512,
         validation_data=_gen_samples(BATCH_SIZE, train=False),
         validation_steps=32,
-        class_weight=np.array([4.0, 0.5]),
+        # class_weight=np.array([4.0, 0.5]),
         epochs=len(lr_list),
         callbacks=callbacks,
         workers=8)
@@ -72,11 +72,15 @@ def _conv_bn_act(*args, **kwargs):
 
 
 def _distance(x):
-    # 非負値のコサイン類似度：似てたら1、似てなかったら0。距離(のようなもの)にするため1から引いた値にする。
-    x0 = K.l2_normalize(x[0], axis=-1)
-    x1 = K.l2_normalize(x[1], axis=-1)
-    d = 1 - K.sum(x0 * x1, axis=-1)
+    # 上限付きL2距離
+    d = K.minimum(K.sqrt(K.mean(K.square(x[0] - x[1]), axis=-1)), 1)
     d = K.expand_dims(d, axis=-1)
+    return d
+
+
+def distance_np(x0, x1):
+    """距離(numpy版)"""
+    d = np.sqrt(np.mean(np.square(x0 - x1), axis=-1))
     return d
 
 
@@ -87,7 +91,7 @@ def _distance_shape(input_shape):
 
 def _gen_samples(batch_size, train):
     while True:
-        match_size = batch_size // 8  # 一致：不一致
+        match_size = batch_size // 2  # 一致：不一致
         assert match_size >= 1
         y = np.array([0] * match_size + [1] * (batch_size - match_size))
         X1 = np.empty((batch_size, 224, 224, 3))
