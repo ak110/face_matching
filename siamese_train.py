@@ -6,7 +6,7 @@ import keras.backend as K
 import keras.preprocessing.image
 import numpy as np
 
-BATCH_SIZE = 16
+BATCH_SIZE = 12
 
 TRAIN_DIRS = [p for p in pathlib.Path('data/train').iterdir()]
 TEST_DIRS = [p for p in pathlib.Path('data/test').iterdir()]
@@ -15,7 +15,7 @@ TRAIN_PAIR_DIRS = [p for p in pathlib.Path('data/train').iterdir() if len(list(p
 
 
 def _main():
-    base_model = keras.applications.Xception(include_top=False)
+    base_model = keras.applications.Xception(include_top=False, input_shape=(None, None, 3))
     for layer in base_model.layers:
         if layer.name == 'block14_sepconv1':
             break
@@ -27,8 +27,8 @@ def _main():
     decoder = keras.models.Model(base_model.inputs, x)
     decoder.summary()
 
-    inp1 = keras.layers.Input((224, 224, 3))
-    inp2 = keras.layers.Input((224, 224, 3))
+    inp1 = keras.layers.Input((None, None, 3))
+    inp2 = keras.layers.Input((None, None, 3))
     d1 = decoder(inp1)
     d2 = decoder(inp2)
     x = keras.layers.Lambda(_distance, _distance_shape)([d1, d2])
@@ -91,31 +91,33 @@ def _distance_shape(input_shape):
 
 def _gen_samples(batch_size, train):
     while True:
-        match_size = batch_size // 2  # 一致：不一致
-        assert match_size >= 1
-        y = np.array([0] * match_size + [1] * (batch_size - match_size))
-        X1 = np.empty((batch_size, 224, 224, 3))
-        X2 = np.empty((batch_size, 224, 224, 3))
-        for i in range(batch_size):
+        y = []
+        X1 = []
+        X2 = []
+        for _ in range(batch_size // (3 if train else 2)):
             if train:
-                if y[i] == 0:  # 一致
-                    pair = np.random.choice(list(np.random.choice(TRAIN_PAIR_DIRS).iterdir()), 2, replace=False)
-                    X1[i] = load_image(pair[0], train=train)
-                    X2[i] = load_image(pair[1], train=train)
-                else:
-                    assert y[i] == 1  # 不一致
-                    p1, p2 = np.random.choice(TRAIN_DIRS, 2, replace=False)
-                    X1[i] = load_image(np.random.choice(list(p1.iterdir())), train=train)
-                    X2[i] = load_image(np.random.choice(list(p2.iterdir())), train=train)
+                # 一致
+                pair = np.random.choice(list(np.random.choice(TRAIN_PAIR_DIRS).iterdir()), 2, replace=False)
+                X1.append(load_image(pair[0], train=train))
+                X2.append(load_image(pair[1], train=train))
+                y.append(0)
+                # 不一致
+                for pa in pair:
+                    p2 = np.random.choice([d for d in TRAIN_DIRS if d.name != pa.name])
+                    X1.append(load_image(pa, train=train))
+                    X2.append(load_image(np.random.choice(list(p2.iterdir())), train=train))
+                    y.append(1)
             else:
                 p1 = np.random.choice(TEST_DIRS)
-                if y[i] == 0:
-                    p2 = [d for d in TRAIN_DIRS if d.name == p1.name][0]  # 一致
-                else:
-                    p2 = np.random.choice([d for d in TRAIN_DIRS if d.name != p1.name])  # 不一致
-                X1[i] = load_image(np.random.choice(list(p1.iterdir())), train=train)
-                X2[i] = load_image(np.random.choice(list(p2.iterdir())), train=train)
-        yield [X1, X2], y
+                p2 = [d for d in TRAIN_DIRS if d.name == p1.name][0]  # 一致
+                p3 = np.random.choice([d for d in TRAIN_DIRS if d.name != p1.name])  # 不一致
+                X1.append(load_image(np.random.choice(list(p1.iterdir())), train=train))
+                X2.append(load_image(np.random.choice(list(p2.iterdir())), train=train))
+                y.append(0)
+                X1.append(X1[-1])
+                X2.append(load_image(np.random.choice(list(p3.iterdir())), train=train))
+                y.append(1)
+        yield [np.array(X1), np.array(X2)], np.array(y)
 
 
 def load_image(path, train):
