@@ -29,6 +29,7 @@ def _main():
 
     logging.basicConfig(level=logging.INFO, filename='siamese_result.txt', filemode='w')
     logger = logging.getLogger(__name__)
+    logger.addHandler(logging.StreamHandler())
 
     X_train, y_train = [], []
     for p in TRAIN_DIRS:
@@ -51,7 +52,7 @@ def _main():
 
     # trainのdecode
     feature_train = []
-    for X_batch in tqdm(np.array_split(X_train, len(X_train) // BATCH_SIZE)):
+    for X_batch in tqdm(np.array_split(X_train, len(X_train) // BATCH_SIZE), ascii=True):
         imgs = np.array([load_image(x, train=False) for x in X_batch])
         feats = decoder.predict(imgs)
         feature_train.extend(feats)
@@ -64,7 +65,7 @@ def _main():
     order_list = []
     match_dist_info = []
     unmatch_dist_info = []
-    for x, y in tqdm(list(zip(X_test, y_test))):
+    for x, y in tqdm(list(zip(X_test, y_test)), ascii=True):
         img = load_image(x, train=False)
         feats = decoder.predict(np.expand_dims(img, axis=0))[0]
         distances = distance_np(feature_train, feats[np.newaxis, :])
