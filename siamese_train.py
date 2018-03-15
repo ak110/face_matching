@@ -6,7 +6,7 @@ import keras.backend as K
 import keras.preprocessing.image
 import numpy as np
 
-BATCH_SIZE = 12
+BATCH_SIZE = 16
 
 TRAIN_DIRS = [p for p in pathlib.Path('data/train').iterdir()]
 TEST_DIRS = [p for p in pathlib.Path('data/test').iterdir()]
@@ -72,8 +72,7 @@ def _conv_bn_act(*args, **kwargs):
 
 
 def _distance(x):
-    # 上限付きL2距離
-    d = K.minimum(K.sqrt(K.mean(K.square(x[0] - x[1]), axis=-1)), 1)
+    d = K.sqrt(K.mean(K.square(x[0] - x[1]), axis=-1))
     d = K.expand_dims(d, axis=-1)
     return d
 
@@ -94,7 +93,7 @@ def _gen_samples(batch_size, train):
         y = []
         X1 = []
         X2 = []
-        for _ in range(batch_size // (3 if train else 2)):
+        for _ in range(batch_size // (4 if train else 2)):
             if train:
                 # 一致
                 pair = np.random.choice(list(np.random.choice(TRAIN_PAIR_DIRS).iterdir()), 2, replace=False)
@@ -107,6 +106,11 @@ def _gen_samples(batch_size, train):
                     X1.append(load_image(pa, train=train))
                     X2.append(load_image(np.random.choice(list(p2.iterdir())), train=train))
                     y.append(1)
+                # もう一つ不一致
+                p1, p2 = np.random.choice(TRAIN_DIRS, 2, replace=False)
+                X1.append(load_image(np.random.choice(list(p1.iterdir())), train=train))
+                X2.append(load_image(np.random.choice(list(p2.iterdir())), train=train))
+                y.append(1)
             else:
                 p1 = np.random.choice(TEST_DIRS)
                 p2 = [d for d in TRAIN_DIRS if d.name == p1.name][0]  # 一致
